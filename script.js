@@ -196,21 +196,22 @@ function updateDashboard() {
 // ======================================
 
 function displayTransactions() {
-    transactionList.innerHTML = "";
+    // Clear the current list before rendering the selected transactions.
+    transactionList.replaceChildren();
 
     const selectedFilter = filterSelect.value;
 
-    transactions.forEach(function(transaction) {
-        if (
-            selectedFilter !== "all" &&
-            transaction.type !== selectedFilter
-        ) {
-            return;
-        }
+    // Apply the selected filter before creating the list items.
+    const visibleTransactions = transactions.filter(function(transaction) {
+        return (
+            selectedFilter === "all" ||
+            transaction.type === selectedFilter
+        );
+    });
 
+    visibleTransactions.forEach(function(transaction) {
         const li = document.createElement("li");
         const info = document.createElement("div");
-
         info.className = "transaction-info";
 
         const description = document.createElement("strong");
@@ -223,20 +224,24 @@ function displayTransactions() {
         info.appendChild(category);
 
         const amount = document.createElement("strong");
+        const numericAmount = Number(transaction.amount);
 
         if (transaction.type === "income") {
-            amount.textContent =
-                "+ KES " + transaction.amount.toFixed(2);
+            amount.textContent = "+ KES " + numericAmount.toFixed(2);
             amount.className = "income";
         } else {
-            amount.textContent =
-                "- KES " + transaction.amount.toFixed(2);
+            amount.textContent = "- KES " + numericAmount.toFixed(2);
             amount.className = "expense";
         }
 
         const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
         deleteButton.textContent = "Delete";
         deleteButton.className = "delete-btn";
+        deleteButton.setAttribute(
+            "aria-label",
+            "Delete transaction: " + transaction.description
+        );
 
         deleteButton.addEventListener("click", function() {
             transactions = transactions.filter(function(item) {
@@ -244,31 +249,26 @@ function displayTransactions() {
             });
 
             saveData();
-
-            showFeedback(
-                "Transaction deleted successfully.",
-                "success"
-            );
-
+            showFeedback("Transaction deleted successfully.", "success");
             updateDashboard();
         });
 
         li.appendChild(info);
         li.appendChild(amount);
         li.appendChild(deleteButton);
-
         transactionList.appendChild(li);
     });
 
-    const visibleTransactions = transactions.filter(function(item) {
-        return (
-            selectedFilter === "all" ||
-            item.type === selectedFilter
-        );
-    });
+    const emptyMessage = document.getElementById("emptyMessage");
 
-    document.getElementById("emptyMessage").style.display =
-        visibleTransactions.length === 0 ? "block" : "none";
+    if (visibleTransactions.length === 0) {
+        emptyMessage.textContent = selectedFilter === "all"
+            ? "No transactions yet. Add your first transaction!"
+            : "No " + selectedFilter + " transactions found.";
+        emptyMessage.style.display = "block";
+    } else {
+        emptyMessage.style.display = "none";
+    }
 }
 
 // ======================================
